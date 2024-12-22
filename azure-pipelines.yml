@@ -1,0 +1,35 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  appName: 'tint-weather-app'
+  dockerImageName: 'tint'
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildDockerImage
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'myContainerRegistry'
+              repository: $(dockerImageName)
+              command: 'buildAndPush'
+              Dockerfile: '**/Dockerfile'
+              tags: 'latest'
+
+  - stage: Deploy
+    jobs:
+      - job: DeployToAzure
+        steps:
+          - task: AzureWebAppContainer@2
+            inputs:
+              azureSubscription: 'myAzureSubscription'
+              appName: $(appName)
+              dockerImage: 'myContainerRegistry/$(dockerImageName):latest'
+              appSettings: '-WEATHER_API_KEY $(weatherApiKey)'
